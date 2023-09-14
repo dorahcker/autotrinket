@@ -1,0 +1,126 @@
+local TrinketData = game.Workspace.Folder
+local trinketModel = game.Workspace.Thrown
+local player = game:GetService("Players").LocalPlayer
+local name = player.Name
+local Viable 
+
+
+
+for i, v in pairs(game.Workspace.Folder:GetChildren()) do
+    for i2,v2 in pairs(game.Workspace.Thrown:GetChildren()) do
+        if not v.Blacklist:FindFirstChild(name, true) and v2:FindFirstChild("Mesh") and v2.Position == v.Position and (player.Character.Torso.Position - v2.Position).Magnitude < 1000 then
+           Viable = v
+           break
+        end
+    end
+    if Viable then
+        break
+    end
+end
+
+local Players = game:GetService("Players")
+
+local Mouse = player:GetMouse()
+for i,v in pairs(getconnections(Mouse.Button1Down)) do
+if tostring(rawget(getfenv(v.Function), "script")) == "mainclient "  then -- funny cheser
+for i2,v2 in pairs(debug.getupvalues(v.Function)) do
+        if type(v2) == "function" and islclosure(v2) then 
+        old = hookfunction(v2, function(...)
+            if not RemoteArgs then
+                returned = old(...)
+                if type(returned) == "table" then
+                    RemoteArgs = returned
+                    return task.wait(999999) -- so it doesnt ban us?
+                end
+            end
+            return old(...)
+        end)
+        break
+        end
+    end
+    end
+end
+
+local mouse = player:GetMouse()
+local hum = player.Character.HumanoidRootPart
+
+
+local old3
+local mt = getrawmetatable(game)
+old3 = hookfunction(mt.__index, newcclosure(function(obj,key)
+    if  RemoteArgs == nil and obj == hum and tostring(key) == "Position" then -- game checks whether my humanoidrootpart is close enough to the trinket for it to fire
+           return old3(Viable, "Position")
+    elseif RemoteArgs == nil and obj == mouse and tostring(key) == "Target" then -- custom click detector checks if the pointed at object is a trinket just spoof it temporary so i can fire the function and grab the arguments
+        return Viable
+    end
+       return old3(obj, key)
+end))
+
+
+
+
+repeat 
+    task.wait(0.1)
+    firesignal(mouse.Button1Down) -- attempt to fire the function to grab the arguments for the remote
+until RemoteArgs
+
+local remote 
+for i,v in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
+    if v.Name == "ClickTrinket" then
+        remote = v
+        break
+    elseif #v.Name > 30 then
+        remote = v
+        break
+    end
+end
+
+  local function FireRemote(trinket)
+  
+  local tbl = {table.unpack(RemoteArgs)}
+  local args = {}
+  
+  repeat -- shuffle the arguments everytime remote is fired because thats exactly what the main scirpt does presumably?
+  if #tbl ~= 0 then
+      local completed = false
+      local index = math.random(1, #tbl)
+      local val = tbl[index]
+      table.remove(tbl, index)
+      table.insert(args, val)
+      
+      end
+  until #tbl == 0
+
+  remote:FireServer(trinket, table.unpack(args))
+  end
+
+----------------------------------------------------
+  local function PickUpTrinket(ClickDetector, RealPart)
+    local part = RealPart
+    task.spawn(function()
+        repeat
+            task.wait(0.1)
+            local Character = player.Character
+            if Character and Character:FindFirstChild("HumanoidRootPart") and (Character:FindFirstChild("HumanoidRootPart").Position - part.Position).Magnitude < 9 then
+                FireRemote(ClickDetector)
+            end
+        until not part
+    end)
+  end
+
+  for i, v in pairs(game.Workspace.Folder:GetChildren()) do
+    for i2,v2 in pairs(game.Workspace.Thrown:GetChildren()) do
+        if not v.Blacklist:FindFirstChild(name, true) and v2.Name == "Part" and v2:FindFirstChild("Mesh") and (v2.Position-v.Position).Magnitude < 3 then
+            PickUpTrinket(v,v2)
+        end
+    end
+end
+
+
+game.Workspace.Thrown.ChildAdded:Connect(function(child)
+    for i,v in pairs(game.Workspace.Folder:GetChildren()) do
+        if child.Name == "Part" and child:FindFirstChild("Mesh") and (child.Position-v.Position).Magnitude < 3 then
+            PickUpTrinket(v,child)
+        end
+    end
+end)
